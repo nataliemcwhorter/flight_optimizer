@@ -3,7 +3,6 @@
 //
 #ifndef FLIGHT_OPTIMIZER_USERQUERY_H
 #define FLIGHT_OPTIMIZER_USERQUERY_H
-#endif //FLIGHT_OPTIMIZER_USERQUERY_H
 
 #pragma once
 #include <string>
@@ -33,3 +32,15 @@ struct UserQuery {
 	double budgetCap;            // max total price, 0.0 = no limit
 	int maxDurationMinutes;      // max total travel time, 0 = no limit
 };
+
+inline std::string seatClassToString(SeatClass sc) {
+	switch (sc) {
+		case SeatClass::ECONOMY:         return "Economy";
+		case SeatClass::PREMIUM_ECONOMY: return "Premium Economy";
+		case SeatClass::BUSINESS:        return "Business";
+		case SeatClass::FIRST:           return "First Class";
+		default:                         return "Unknown";
+	}
+}
+
+#endif //FLIGHT_OPTIMIZER_USERQUERY_H

@@ -4,7 +4,6 @@
 #ifndef FLIGHT_OPTIMIZER_AIRPORT_H
 #define FLIGHT_OPTIMIZER_AIRPORT_H
 
-#pragma once
 #include <string>
 #include <cmath>
 

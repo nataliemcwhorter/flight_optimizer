@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.1)
 project(flight_optimizer)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 add_executable(flight_optimizer src/main.cpp
         src/models/Airport.h
