@@ -4,134 +4,143 @@
 
 #include "DataLoader.h"
 
+// Strips surrounding double-quotes from a token if present.
+// OpenFlights quotes most string fields e.g. "London Heathrow Airport"
+static std::string stripQuotes(const std::string& s) {
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"')
+        return s.substr(1, s.size() - 2);
+    return s;
+}
+
+// Splits a CSV line respecting double-quoted fields that may contain commas.
+static std::vector<std::string> splitCSV(const std::string& line) {
+    std::vector<std::string> tokens;
+    std::string token;
+    bool inQuotes = false;
+    for (char c : line) {
+        if (c == '"') {
+            inQuotes = !inQuotes;
+        } else if (c == ',' && !inQuotes) {
+            tokens.push_back(token);
+            token.clear();
+        } else {
+            token += c;
+        }
+    }
+    tokens.push_back(token);
+    return tokens;
+}
+
 void DataLoader::loadAirports(const std::string& csvPath, FlightGraph& graph) {
-    // TODO Step 1: Open the CSV file using std::ifstream file(csvPath)
-    //             Check if file.is_open() is false; if so, throw:
-    //             std::runtime_error("Could not open: " + csvPath)
+    std::ifstream file(csvPath);
+    if (!file.is_open())
+        throw std::runtime_error("Could not open: " + csvPath);
 
-    // TODO Step 2: Read and discard the header line using:
-    //             std::string header;
-    //             std::getline(file, header);
-
-    // TODO Step 3: Loop through remaining lines:
-    //             std::string line;
-    //             while (std::getline(file, line)) {
-    //               Airport a = parseAirportRow(line);
-    //               graph.addAirport(a);
-    //             }
+    // OpenFlights airports.dat has NO header line
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        Airport a = parseAirportRow(line);
+        if (!a.iataCode.empty())
+            graph.addAirport(a);
+    }
 }
 
 void DataLoader::loadRoutes(const std::string& csvPath, FlightGraph& graph) {
-    // TODO Step 1: Open the CSV file using std::ifstream; if fails, throw
-    //             std::runtime_error("Could not open: " + csvPath)
+    std::ifstream file(csvPath);
+    if (!file.is_open())
+        throw std::runtime_error("Could not open: " + csvPath);
 
-    // TODO Step 2: Read and discard the header line
-
-    // TODO Step 3: Loop through remaining lines:
-    //             std::string line;
-    //             while (std::getline(file, line)) {
-    //               Flight f = parseRouteRow(line);
-    //               graph.addFlight(f);
-    //             }
+    // OpenFlights routes.dat has NO header line
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        Flight f = parseRouteRow(line);
+        if (!f.airlineCode.empty())
+            graph.addFlight(f);
+    }
 }
 
-void DataLoader::loadAirlines(const std::string& csvPath, std::unordered_map<std::string, Airline>& airlines) {
-    // TODO Step 1: Open the CSV file using std::ifstream; if fails, throw
-    //             std::runtime_error("Could not open: " + csvPath)
+void DataLoader::loadAirlines(const std::string& csvPath,
+                               std::unordered_map<std::string, Airline>& airlines) {
+    std::ifstream file(csvPath);
+    if (!file.is_open())
+        throw std::runtime_error("Could not open: " + csvPath);
 
-    // TODO Step 2: Read and discard the header line
-
-    // TODO Step 3: Loop through remaining lines:
-    //             std::string line;
-    //             while (std::getline(file, line)) {
-    //               Airline a = parseAirlineRow(line);
-    //               airlines[a.iataCode] = a;
-    //             }
+    // OpenFlights airlines.dat has NO header line
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        Airline a = parseAirlineRow(line);
+        if (!a.iataCode.empty())
+            airlines[a.iataCode] = a;
+    }
 }
 
 Airport DataLoader::parseAirportRow(const std::string& row) {
-    // TODO: Create std::stringstream ss(row) and std::string token
+    // OpenFlights airports.dat — quoted fields, NO header, 14 columns:
+    // 0:id, 1:name, 2:city, 3:country, 4:IATA, 5:ICAO, 6:lat, 7:lon,
+    // 8:alt, 9:timezone, 10:DST, 11:tz, 12:type, 13:source
+    auto cols = splitCSV(row);
+    if (cols.size() < 8) return Airport{};
 
-    // TODO: Parse CSV columns using std::getline(ss, token, ',') in sequence:
-    //       col0 = id (use std::stoi to convert to numericId)
-    //       col1 = name
-    //       col2 = city
-    //       col3 = country
-    //       col4 = iataCode
-    //       col5 = icaoCode
-    //       col6 = latitude (use std::stod to convert to double)
-    //       col7 = longitude (use std::stod to convert to double)
-    //       (Skip remaining columns if present)
+    std::string iataCode = stripQuotes(cols[4]);
+    if (iataCode.empty() || iataCode == "\\N") return Airport{};
 
-    // TODO: Validate iataCode — if it equals "" or "\\N", return an empty Airport struct
-    //       (The caller should skip invalid airports)
-
-    // TODO: Create and return an Airport struct with all parsed fields populated:
-    //       Airport a;
-    //       a.numericId = numericId;
-    //       a.name = name;
-    //       a.city = city;
-    //       a.country = country;
-    //       a.iataCode = iataCode;
-    //       a.icaoCode = icaoCode;
-    //       a.latitude = latitude;
-    //       a.longitude = longitude;
-    //       return a;
+    Airport a;
+    try { a.numericId = std::stoi(stripQuotes(cols[0])); } catch (...) { a.numericId = 0; }
+    a.name      = stripQuotes(cols[1]);
+    a.city      = stripQuotes(cols[2]);
+    a.country   = stripQuotes(cols[3]);
+    a.iataCode  = iataCode;
+    a.icaoCode  = stripQuotes(cols[5]);
+    try { a.latitude  = std::stod(stripQuotes(cols[6])); } catch (...) { a.latitude  = 0.0; }
+    try { a.longitude = std::stod(stripQuotes(cols[7])); } catch (...) { a.longitude = 0.0; }
+    return a;
 }
 
 Flight DataLoader::parseRouteRow(const std::string& row) {
-    // TODO: Create std::stringstream ss(row) and std::string token
+    // OpenFlights routes.dat — unquoted, NO header, 9 columns:
+    // 0:airline, 1:airlineId, 2:srcAirport, 3:srcAirportId,
+    // 4:dstAirport, 5:dstAirportId, 6:codeshare, 7:stops, 8:equipment
+    auto cols = splitCSV(row);
+    if (cols.size() < 5) return Flight{};
 
-    // TODO: Parse OpenFlights routes CSV columns using std::getline(ss, token, ','):
-    //       col0 = airlineCode (airline's IATA code)
-    //       col1 = airlineId (numeric ID, skip for now)
-    //       col2 = sourceIata (origin airport IATA code)
-    //       col3 = sourceId (numeric ID, skip for now)
-    //       col4 = destIata (destination airport IATA code)
-    //       col5 = destId (numeric ID, skip for now)
-    //       col6 = codeshare (optional code-share indicator, skip)
-    //       col7 = stops (number of stops, skip)
-    //       col8 = equipment (aircraft type, skip)
+    std::string airlineCode = cols[0];
+    std::string sourceIata  = cols[2];
+    std::string destIata    = cols[4];
 
-    // TODO: Create a Flight struct and populate:
-    //       flightNumber = airlineCode + sourceIata + "→" + destIata
-    //       origin.iataCode = sourceIata
-    //       destination.iataCode = destIata
-    //       airlineCode = airlineCode (the airline's IATA code)
-    //       departureTime = 0 (will be set by real-time data later)
-    //       arrivalTime = 0 (will be set by real-time data later)
-    //       popularityScore = 1.0 (default, updated dynamically)
+    if (airlineCode.empty() || airlineCode == "\\N") return Flight{};
+    if (sourceIata.empty()  || sourceIata  == "\\N") return Flight{};
+    if (destIata.empty()    || destIata    == "\\N") return Flight{};
 
-    // TODO: Note — full Airport objects (with coordinates, etc.) will be resolved later
-    //       by an AirportIndex component. For now, only iataCode is set.
-
-    // TODO: Return the populated Flight struct
+    Flight f;
+    f.flightNumber         = airlineCode + sourceIata + "\u2192" + destIata;
+    f.airlineCode          = airlineCode;
+    f.origin.iataCode      = sourceIata;
+    f.destination.iataCode = destIata;
+    f.departureTime        = 0;
+    f.arrivalTime          = 0;
+    f.popularityScore      = 1.0;
+    f.availableClasses     = {SeatClass::ECONOMY, SeatClass::BUSINESS, SeatClass::FIRST};
+    return f;
 }
 
 Airline DataLoader::parseAirlineRow(const std::string& row) {
-    // TODO: Create std::stringstream ss(row) and std::string token
+    // OpenFlights airlines.dat — quoted fields, NO header, 8 columns:
+    // 0:id, 1:name, 2:alias, 3:IATA, 4:ICAO, 5:callsign, 6:country, 7:active
+    auto cols = splitCSV(row);
+    if (cols.size() < 8) return Airline{};
 
-    // TODO: Parse OpenFlights airlines CSV columns using std::getline(ss, token, ','):
-    //       col0 = id (numeric airline ID, skip for now)
-    //       col1 = name (airline name)
-    //       col2 = alias (alternate name, skip for now)
-    //       col3 = iataCode (airline's IATA code, e.g., "AA")
-    //       col4 = icaoCode (airline's ICAO code, e.g., "AAL")
-    //       col5 = callsign (airline's radio callsign, skip for now)
-    //       col6 = country (airline's home country)
-    //       col7 = active (status: "Y" for active, "N" for inactive)
+    std::string iataCode = stripQuotes(cols[3]);
+    if (iataCode.empty() || iataCode == "\\N") return Airline{};
 
-    // TODO: Create an Airline struct and populate:
-    //       iataCode = iataCode
-    //       icaoCode = icaoCode
-    //       name = name
-    //       country = country
-    //       isActive = (active == "Y") — convert string to boolean
-    //       baseRatePerKm = 0.10 (default rate, may be overridden)
-    //       (classMultipliers, demandSensitivity, popularityWeight initialized to defaults)
-
-    // TODO: Validate iataCode — if it equals "" or "\\N", return an empty Airline struct
-    //       (The caller should skip invalid airlines)
-
-    // TODO: Return the populated Airline struct
+    Airline a;
+    a.name          = stripQuotes(cols[1]);
+    a.iataCode      = iataCode;
+    a.icaoCode      = stripQuotes(cols[4]);
+    a.country       = stripQuotes(cols[6]);
+    a.isActive      = (stripQuotes(cols[7]) == "Y");
+    a.baseRatePerKm = 0.10;
+    return a;
 }

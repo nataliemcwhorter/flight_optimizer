@@ -25,6 +25,9 @@ private:
     /// Map of IATA codes to Airport objects
     std::unordered_map<std::string, Airport> airports;
 
+    /// Reverse lookup: ICAO code → IATA code
+    std::unordered_map<std::string, std::string> icaoToIata;
+
     /// Adjacency list: key = origin airport IATA code, value = vector of Flight objects
     std::unordered_map<std::string, std::vector<Flight>> adjacency;
 
@@ -57,6 +60,13 @@ public:
     std::optional<Airport> getAirport(const std::string& iataCode) const;
 
     /**
+     * @brief Retrieve an airport by its ICAO code.
+     * @param icaoCode The ICAO code to look up (e.g. "KJFK")
+     * @return Optional containing the Airport if found; std::nullopt otherwise
+     */
+    std::optional<Airport> getAirportByIcao(const std::string& icaoCode) const;
+
+    /**
      * @brief Check if an airport exists in the graph.
      * @param iataCode The IATA code to check
      * @return true if airport exists; false otherwise
@@ -80,6 +90,5 @@ public:
      */
     void clear();
 };
-
 
 #endif //FLIGHT_OPTIMIZER_FLIGHTGRAPH_H

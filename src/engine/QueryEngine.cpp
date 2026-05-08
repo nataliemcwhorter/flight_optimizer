@@ -16,13 +16,20 @@ QueryEngine::QueryEngine(FlightGraph& graph) : graph(graph), pathFinder(graph), 
  * @param p The Priority enum value.
  * @return Strategy name string for the RankingEngine.
  */
+
+
+using namespace std;
 std::string QueryEngine::priorityToStrategy(Priority p) const {
-	// TODO: Implement switch statement on p:
-	//   - Priority::CHEAPEST → return "cheapest"
-	//   - Priority::FASTEST → return "fastest"
-	//   - Priority::FEWEST_STOPS → return "fewest_stops"
-	//   - Priority::BEST_VALUE → return "best_value"
-	//   - default → return "cheapest"
+	switch (p) {
+		case Priority::CHEAPEST:
+			return "cheapest";
+		case Priority::FASTEST:
+			return "fastest";
+		case Priority::FEWEST_STOPS:
+			return "fewest_stops";
+		case Priority::BEST_VALUE:
+			return "best_value";
+	}
 	return "";
 }
 
@@ -32,8 +39,7 @@ std::string QueryEngine::priorityToStrategy(Priority p) const {
  * @return A vector of FlightOffers sorted according to the user's priority strategy.
  */
 std::vector<FlightOffer> QueryEngine::query(const UserQuery& q) {
-	// TODO Step 1: Call pathFinder.findPaths(q) and store result in a variable named 'candidates'
-	// TODO Step 2: Call priorityToStrategy(q.priority) and store result in a variable named 'strategyName'
-	// TODO Step 3: Return rankingEngine.rank(candidates, strategyName)
-	return std::vector<FlightOffer>();
+	vector<FlightOffer> candidates = pathFinder.findPaths(q);
+	string strategyName =priorityToStrategy(q.priority);
+	return rankingEngine.rank(candidates, strategyName);
 }

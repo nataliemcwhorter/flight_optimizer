@@ -55,5 +55,4 @@ public:
 	bool isEmpty() const;
 };
 
-
 #endif //FLIGHT_OPTIMIZER_AIRPORTINDEX_H

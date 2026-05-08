@@ -3,40 +3,93 @@
 //
 
 #include "PricingModel.h"
+#include <ctime>
+#include <algorithm>
+using namespace std;
 
 PricingModel::PricingModel(PriceCache& cache) : cache(cache) {
 	// Constructor implementation
 }
 
 std::string PricingModel::makeCacheKey(const Flight& flight, SeatClass sc) const {
-	// TODO: Return flight.flightNumber + "_" + std::to_string(static_cast<int>(sc))
-	// This creates a unique cache key combining flight identifier and seat class
+	return flight.flightNumber + "_" + std::to_string(static_cast<int>(sc));
 }
 
 double PricingModel::computePrice(const Flight& flight, const Airline& airline,
 								   SeatClass sc, const PricingConfig& config) {
-	// TODO Step 1: Build cache key using makeCacheKey(flight, sc)
-	//             Call cache.get(key) and check if value is present
-	//             If present (optional has value), return it immediately
+	string c_key = makeCacheKey(flight, sc);
+	auto cached = cache.get(c_key);
+	if (cached.has_value()) {return cached.value();}
 
-	// TODO Step 2: Calculate distance using flight.origin.distanceTo(flight.destination)
+	double distance = flight.origin.distanceTo(flight.destination);
+	double seatMultiplier = airline.getMultiplier(sc);
 
-	// TODO Step 3: Retrieve seat class multiplier using airline.getMultiplier(sc)
+	// Base price calculation
+	double basePrice = airline.baseRatePerKm * distance;
 
-	// TODO Step 4: Apply pricing formula:
-	//             price = airline.baseRatePerKm * distance * seatMultiplier
-	//                     * flight.popularityScore * config.demandFactor * config.popularityBoost
+	// Distance-based pricing tiers (longer flights have better per-km rates)
+	double distanceFactor = 1.0;
+	if (distance < 500) {
+		distanceFactor = 1.3;  // Short-haul premium
+	} else if (distance < 2000) {
+		distanceFactor = 1.0;  // Medium-haul baseline
+	} else {
+		distanceFactor = 0.85; // Long-haul discount per km
+	}
 
-	// TODO Step 5: Store the computed price in cache using cache.put(key, price)
+	// Seat class premium adjustments (beyond base multiplier)
+	double classPremium = 1.0;
+	switch (sc) {
+		case SeatClass::ECONOMY:
+			classPremium = 1.0;
+			break;
+		case SeatClass::PREMIUM_ECONOMY:
+			classPremium = 1.4;  // 40% premium over economy
+			break;
+		case SeatClass::BUSINESS:
+			classPremium = 2.5;  // 150% premium over economy
+			break;
+		case SeatClass::FIRST:
+			classPremium = 4.0;  // 300% premium over economy
+			break;
+	}
 
-	// TODO Step 6: Return the computed price
-}
+	// Time-based pricing (flights departing in peak hours cost more)
+	double timeFactor = 1.0;
+	if (flight.departureTime > 0) {
+		time_t t = static_cast<time_t>(flight.departureTime);
+		struct tm* tm_info = std::localtime(&t);
+		int hour = tm_info->tm_hour;
+
+		// Peak hours: 6-9 AM, 5-8 PM
+		if ((hour >= 6 && hour <= 9) || (hour >= 17 && hour <= 20)) {
+			timeFactor = 1.25;  // 25% peak hour premium
+		}
+	}
+
+	// Compute final price with all factors
+	double price = basePrice
+		* distanceFactor
+		* seatMultiplier
+		* classPremium
+		* timeFactor
+		* flight.popularityScore
+		* config.demandFactor
+		* config.popularityBoost;
+
+	// Add minimum base fare to prevent unrealistically low prices
+	double minFare = 50.0;
+	if (sc == SeatClass::BUSINESS) minFare = 150.0;
+	if (sc == SeatClass::FIRST) minFare = 300.0;
+	price = std::max(price, minFare);
+
+	cache.put(c_key, price);
+	return price;
+};
 
 void PricingModel::populatePrices(Flight& flight, const Airline& airline,
 								   const PricingConfig& config) {
-	// TODO: Use a range-based for loop to iterate over flight.availableClasses
-	//       For each SeatClass sc in that vector:
-	//       - Call computePrice(flight, airline, sc, config)
-	//       - Store the returned price in flight.pricePerClass[sc]
-	//       This populates the price map for all available seat classes on this flight
+	for (SeatClass sc : flight.availableClasses) {
+		flight.pricePerClass[sc] = computePrice(flight, airline, sc, config);
+	}
 }

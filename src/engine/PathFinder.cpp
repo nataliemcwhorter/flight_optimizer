@@ -4,68 +4,101 @@
 
 #include "PathFinder.h"
 
+#include <iostream>
+
 /**
  * @brief Constructor for PathFinder.
- *
- * TODO: Initialize the graph reference via member initializer list.
  * Store reference to FlightGraph for use in pathfinding algorithm.
  */
 PathFinder::PathFinder(FlightGraph& graph)
     : graph(graph) {
-    // TODO: Member initialization complete
 }
 
 /**
  * @brief Checks if a FlightOffer meets all UserQuery constraints.
- *
- * TODO Step 1: For each leg in offer.legs, verify that flight.isAvailable(query.seatClass) returns true
- * TODO Step 2: Verify that (offer.legs.size() - 1) <= query.maxStops
- * TODO Step 3: If query.budgetCap > 0, verify that offer.getTotalPrice() <= query.budgetCap
- * TODO Step 4: If query.maxDurationMinutes > 0, verify that sum of leg.getDuration() for all legs <= query.maxDurationMinutes
- *
  * @param offer The FlightOffer to validate
  * @param query The UserQuery with constraints
  * @return true if all constraints are satisfied, false otherwise
  */
 bool PathFinder::meetsConstraints(const FlightOffer& offer, const UserQuery& query) const {
-    // TODO: Implement constraint checking logic
+    for (const Flight& flight : offer.legs) {
+        if (!flight.isAvailable(query.seatClass)) return false;
+        }
+    if (offer.getStopCount() > query.maxStops) return false;
+    if (query.budgetCap > 0) {
+        if (offer.getTotalPrice() > query.budgetCap) return false;
+    }
+    if (query.maxDurationMinutes > 0) {
+        if (offer.getTotalDurationMinutes() > query.maxDurationMinutes && query.maxDurationMinutes != 0) return false;
+    }
     return true;
 }
 
 /**
  * @brief Finds all valid flight paths matching the given query using Dijkstra's algorithm.
- *
- * Algorithm Overview:
- *
- * TODO Step 1: Create a FlightHeap with a price comparator (cheapest offers first).
- *             Use std::function<bool(const FlightOffer&, const FlightOffer&)> to compare offers by getTotalPrice().
- *
- * TODO Step 2: Seed the heap with initial flights.
- *             - Get all flights departing from query.origin using graph.getFlightsFrom(query.origin)
- *             - For each flight, wrap it as a single-leg FlightOffer
- *             - Push each single-leg offer onto the heap
- *
- * TODO Step 3: Execute Dijkstra's main loop:
- *             - While heap is not empty:
- *               a) Pop the best (lowest-cost) offer from the heap
- *               b) If last leg's destination == query.destination AND meetsConstraints(offer, query):
- *                  - Add offer to results vector
- *                  - Continue to next iteration (skip expansion)
- *               c) Else if (offer.legs.size() - 1) < query.maxStops:
- *                  - Get all flights departing from offer.legs.back().destination
- *                  - For each outgoing flight, create a new FlightOffer by appending this flight to offer.legs
- *                  - Push new offer onto heap
- *               d) Else: offer has maxed out stops, skip expansion
- *
- * TODO Step 4: Return the results vector containing all valid FlightOffers found
- *
  * @param query The user's flight search query
  * @return Vector of FlightOffers satisfying all query constraints
  */
 std::vector<FlightOffer> PathFinder::findPaths(const UserQuery& query) {
     std::vector<FlightOffer> results;
+    std::function<bool(const FlightOffer&, const FlightOffer&)> cmp = [](const FlightOffer& a, const FlightOffer& b) { return a.getTotalPrice() < b.getTotalPrice();};
+    FlightHeap heap(cmp);
 
-    // TODO: Implement Dijkstra's algorithm per steps above
+    std::vector<Flight> initialFlights = graph.getFlightsFrom(query.origin);
+    for (Flight flight : initialFlights) {
+        // Simulate flight times based on query date if not set
+        if (flight.departureTime == 0) {
+            flight.departureTime = query.departureDate;
+            // Estimate flight duration: ~800 km/h average speed
+            double distance = flight.origin.distanceTo(flight.destination);
+            long long durationSeconds = static_cast<long long>((distance / 800.0) * 3600);
+            flight.arrivalTime = flight.departureTime + durationSeconds;
+        }
 
+        FlightOffer offer;
+        offer.legs = {flight};
+        offer.selectedClass = query.seatClass;
+        heap.push(offer);
+    }
+
+    while (!heap.isEmpty()) {
+        FlightOffer offer = heap.pop();
+
+        // Check if we reached destination
+        if (offer.legs.back().destination.iataCode == query.destination) {
+            if (meetsConstraints(offer, query)) {
+                results.push_back(offer);
+            }
+            continue;
+        }
+
+        // Explore connections if we haven't exceeded max stops
+        if (offer.getStopCount() < query.maxStops) {
+            std::vector<Flight> connections = graph.getFlightsFrom(offer.legs.back().destination.iataCode);
+            for (Flight flight : connections) {
+                // Simulate flight times for connections if not set
+                if (flight.departureTime == 0) {
+                    // Set departure 2 hours after previous arrival (layover time)
+                    flight.departureTime = offer.legs.back().arrivalTime + (2 * 3600);
+                    // Estimate flight duration
+                    double distance = flight.origin.distanceTo(flight.destination);
+                    long long durationSeconds = static_cast<long long>((distance / 800.0) * 3600);
+                    flight.arrivalTime = flight.departureTime + durationSeconds;
+                }
+
+                // Check minimum connection time (45 minutes)
+                long long minConnection = 45 * 60;
+                if (flight.departureTime < offer.legs.back().arrivalTime + minConnection) {
+                    continue;
+                }
+
+                FlightOffer connectOffer;
+                connectOffer.legs = offer.legs;
+                connectOffer.legs.push_back(flight);
+                connectOffer.selectedClass = query.seatClass;
+                heap.push(connectOffer);
+            }
+        }
+    }
     return results;
 }

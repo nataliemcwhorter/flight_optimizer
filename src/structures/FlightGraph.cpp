@@ -1,42 +1,53 @@
 #include "FlightGraph.h"
 
 void FlightGraph::addAirport(const Airport& airport) {
-	// TODO: Insert airport into airports map keyed by airport.iataCode;
-	// if iataCode not already in adjacency, insert empty vector to ensure key exists
+	airports.insert({airport.iataCode, airport});
+	if (!airport.icaoCode.empty() && airport.icaoCode != "\\N")
+		icaoToIata[airport.icaoCode] = airport.iataCode;
+	auto it = adjacency.find(airport.iataCode);
+	if (it == adjacency.end())
+		adjacency.insert({airport.iataCode, {}});
 }
 
 void FlightGraph::addFlight(const Flight& flight) {
-	// TODO: Push_back flight into adjacency[flight.origin.iataCode];
-	// note: addAirport should be called first for both origin and destination before addFlight
+	adjacency[flight.origin.iataCode].push_back(flight);
 }
 
 std::vector<Flight> FlightGraph::getFlightsFrom(const std::string& iataCode) const {
-	// TODO: Look up adjacency map by iataCode;
-	// if not found return empty vector {}
-	return {};
+	auto it = adjacency.find(iataCode);
+	if (it == adjacency.end()) return {};
+	return it->second;
 }
 
 std::optional<Airport> FlightGraph::getAirport(const std::string& iataCode) const {
-	// TODO: Look up airports map by iataCode;
-	// if not found return std::nullopt
+	auto it = airports.find(iataCode);
+	if (it != airports.end()) return it->second;
 	return std::nullopt;
 }
 
+std::optional<Airport> FlightGraph::getAirportByIcao(const std::string& icaoCode) const {
+	auto it = icaoToIata.find(icaoCode);
+	if (it == icaoToIata.end()) return std::nullopt;
+	return getAirport(it->second);
+}
+
 bool FlightGraph::hasAirport(const std::string& iataCode) const {
-	// TODO: Return airports.count(iataCode) > 0
-	return false;
+	return airports.contains(iataCode);
 }
 
 int FlightGraph::airportCount() const {
-	// TODO: Return static_cast<int>(airports.size())
-	return 0;
+	return static_cast<int>(airports.size());
 }
 
 int FlightGraph::flightCount() const {
-	// TODO: Iterate over adjacency map, accumulate sum of each vector's size(), return total as int
-	return 0;
+	int count = 0;
+	for (const auto& pair : adjacency)
+		count += static_cast<int>(pair.second.size());
+	return count;
 }
 
 void FlightGraph::clear() {
-	// TODO: Call airports.clear() and adjacency.clear()
+	airports.clear();
+	icaoToIata.clear();
+	adjacency.clear();
 }

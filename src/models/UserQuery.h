@@ -3,8 +3,6 @@
 //
 #ifndef FLIGHT_OPTIMIZER_USERQUERY_H
 #define FLIGHT_OPTIMIZER_USERQUERY_H
-
-#pragma once
 #include <string>
 
 enum class SeatClass {
@@ -18,7 +16,7 @@ enum class Priority {
 	CHEAPEST,
 	FASTEST,
 	FEWEST_STOPS,
-	BALANCED   // weighted blend
+	BEST_VALUE   // weighted blend
 };
 
 struct UserQuery {
@@ -26,6 +24,7 @@ struct UserQuery {
 	std::string destination;     // IATA code e.g. "LAX"
 	std::string departDate;      // e.g. "2025-06-15"
 	std::string returnDate;      // empty string if one-way
+	long long departureDate = 0; // Unix timestamp for departure date (set from departDate)
 	SeatClass seatClass;
 	Priority priority;
 	int maxStops;

@@ -61,6 +61,7 @@ struct Flight {
 			   "\n  Status: " + liveStatus;
 	}
 
+
 	static std::string timeToString(long long unixTime) {
 		auto t = static_cast<std::time_t>(unixTime);
 		std::string s(std::ctime(&t));

@@ -4,11 +4,13 @@
 
 #include "FlightHeap.h"
 
+#include <utility>
+
 using namespace std;
 
 //CONSTRUCTOR
 FlightHeap::FlightHeap(std::function<bool(const FlightOffer&, const FlightOffer&)> comp)
-    : comparator(comp) {
+    : comparator(std::move(comp)) {
 }
 
 //PUBLIC METHODS
