@@ -32,12 +32,7 @@ add_executable(benchmark_pathfinder tests/benchmark_pathfinder.cpp
         src/structures/FlightHeap.h
         )
 
-#include "../src/engine/PricingModel.h"
-#include "../src/structures/PriceCache.h"
-#include "../src/models/FlightOffer.h"
-#include "../src/models/Flight.h"
-#include "../src/models/Airport.h"
-#include "../src/models/Airline.h"
+
 add_executable(benchmark_pricing tests/benchmark_pricing.cpp
         src/engine/PricingModel.h
         src/engine/PricingModel.cpp
@@ -75,7 +70,6 @@ add_executable(flight_optimizer src/main.cpp
         src/api/AviationStackClient.h
         src/display/ResultDisplay.cpp
         src/display/ResultDisplay.h
-        tests/benchmark_heap.cpp
         src/engine/PricingModel.cpp
         src/engine/PricingModel.h
         src/models/Airline.h
@@ -85,9 +79,7 @@ add_executable(flight_optimizer src/main.cpp
         src/api/OpenSkyClient.h
         src/snapshot/SnapshotManager.cpp
         src/snapshot/SnapshotManager.h
-        src/snapshot/CachePolicy.h
-        tests/benchmark_pricing.cpp
-        tests/benchmark_pathfinder.cpp)
+        src/snapshot/CachePolicy.h)
 
 find_package(CURL REQUIRED)
 target_link_libraries(flight_optimizer CURL::libcurl)
