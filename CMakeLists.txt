@@ -32,6 +32,23 @@ add_executable(benchmark_pathfinder tests/benchmark_pathfinder.cpp
         src/structures/FlightHeap.h
         )
 
+#include "../src/engine/PricingModel.h"
+#include "../src/structures/PriceCache.h"
+#include "../src/models/FlightOffer.h"
+#include "../src/models/Flight.h"
+#include "../src/models/Airport.h"
+#include "../src/models/Airline.h"
+add_executable(benchmark_pricing tests/benchmark_pricing.cpp
+        src/engine/PricingModel.h
+        src/engine/PricingModel.cpp
+        src/structures/PriceCache.cpp
+        src/structures/PriceCache.h
+        src/models/FlightOffer.h
+        src/models/Flight.h
+        src/models/Airport.h
+        src/models/Airline.h
+        )
+
 
 add_executable(flight_optimizer src/main.cpp
         src/models/Airport.h

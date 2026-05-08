@@ -63,7 +63,7 @@ std::vector<Flight> makeFlights(int n) {
 // MAIN
 // ============================================================================
 
-int maine() {
+int main() {
     const int N = 10000;
 
     std::cout << "=== PricingModel Benchmark: Cached vs Uncached ===\n\n";
