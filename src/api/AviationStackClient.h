@@ -76,8 +76,7 @@ public:
      * @return Vector of Flight objects between the airports
      */
     std::vector<Flight> getLiveFlights(const std::string& depIata,
-                                       const std::string& arrIata,
-                                       const std::string& depDate) const;
+                                       const std::string& arrIata) const;
 
     /**
      * Fetch current status of a specific flight by IATA flight number.
