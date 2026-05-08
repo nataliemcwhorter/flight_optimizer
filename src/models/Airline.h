@@ -24,7 +24,8 @@ struct Airline {
 	double popularityWeight = 0.5;
 
 	[[nodiscard]] double getMultiplier(SeatClass seat) const {
-		if (auto multiplier = classMultipliers.find(seat); multiplier != classMultipliers.end()) {
+		if (auto multiplier = classMultipliers.find(seat);
+			multiplier != classMultipliers.end()) {
 			return multiplier->second;
 		}
 		return 1.0;
@@ -41,8 +42,5 @@ struct Airline {
 	bool operator<(const Airline& other) const {
 		return iataCode < other.iataCode;
 	}
-
-
 };
-
 #endif //FLIGHT_OPTIMIZER_AIRLINE_H

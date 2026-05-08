@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_executable(benchmark_cache tests/benchmark_cache.cpp
         src/structures/PriceCache.cpp
-        src/structures/PriceCache.h)
+        src/structures/PriceCache.h
+        tests/benchmark_trie.cpp)
 
 add_executable(benchmark_graph tests/benchmark_graph.cpp
         src/structures/PriceCache.cpp
@@ -43,6 +44,11 @@ add_executable(benchmark_pricing tests/benchmark_pricing.cpp
         src/models/Airport.h
         src/models/Airline.h
         )
+
+add_executable(benchmark_trie tests/benchmark_trie.cpp
+        src/structures/AirportTrie.h
+        src/structures/AirportTrie.cpp
+        src/models/Airport.h)
 
 
 add_executable(flight_optimizer src/main.cpp
