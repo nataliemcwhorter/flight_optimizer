@@ -157,7 +157,7 @@ int main() {
         if (!aviationStackApiKey.empty()) {
             try {
                 cout << "Fetching live flights from " << query.origin << " to " << query.destination << "...\n";
-                liveFlights = aviationClient.getLiveFlights(query.origin, query.destination);
+                liveFlights = aviationClient.getLiveFlights(query.origin, query.destination, query.departDate);
                 cout << "Found " << liveFlights.size() << " live flights from API.\n";
 
                 // Create temporary graph with ONLY live flights

@@ -1,3 +1,4 @@
+
 //
 // Created by Natalie McWhorter on 4/14/26.
 //
@@ -95,20 +96,56 @@ std::vector<Flight> AviationStackClient::parseFlights(const std::string& jsonStr
     return flights;
 }
 
+// NEW: filter an already-parsed list by destination IATA and departure date string (YYYY-MM-DD).
+// depDate may be empty, in which case only destination filtering is applied.
+static std::vector<Flight> filterFlights(const std::vector<Flight>& flights,
+                                          const std::string& arrIata,
+                                          const std::string& depDate) {
+    std::vector<Flight> result;
+    for (const Flight& f : flights) {
+        // Filter by destination
+        if (!arrIata.empty() && f.destination.iataCode != arrIata)
+            continue;
+
+        // Filter by date if provided
+        if (!depDate.empty() && f.departureTime > 0) {
+            std::time_t t = static_cast<std::time_t>(f.departureTime);
+            std::tm* tm_info = std::localtime(&t);
+            char buf[11]; // "YYYY-MM-DD\0"
+            std::strftime(buf, sizeof(buf), "%Y-%m-%d", tm_info);
+            if (std::string(buf) != depDate)
+                continue;
+        }
+
+        result.push_back(f);
+    }
+    return result;
+}
+
+// CHANGED: Now caches ALL departures from depIata as one big snapshot keyed by
+// "all_departures_<depIata>_<depDate>". On a cache hit we parse and filter locally —
+// zero extra API calls. On a miss we fetch once and store everything.
 std::vector<Flight> AviationStackClient::getLiveFlights(const std::string& depIata,
-                                                         const std::string& arrIata) const {
-    std::string key = makeCacheKey("live_flights", depIata + "_" + arrIata);
+                                                         const std::string& arrIata,
+                                                         const std::string& depDate) const {
+    // Cache key covers the origin + date so different dates get their own snapshot,
+    // but every destination query for the same origin+date reuses the same snapshot.
+    std::string key = makeCacheKey("all_departures", depIata + "_" + depDate);
 
-    if (snapshots.hasSnapshot(key))
-        return parseFlights(snapshots.loadSnapshot(key));
+    std::string jsonData;
+    if (snapshots.hasSnapshot(key)) {
+        jsonData = snapshots.loadSnapshot(key);
+    } else {
+        // Fetch all departures from this airport (AviationStack free tier returns up to 100)
+        std::string url = BASE_URL + "/flights?dep_iata=" + depIata
+                                   + "&access_key=" + apiKey;
+        jsonData = httpGet(url);
+        snapshots.saveSnapshot(key, jsonData);
+    }
 
-    std::string url = BASE_URL + "/flights?dep_iata=" + depIata
-                               + "&arr_iata=" + arrIata
-                               + "&access_key=" + apiKey;
-
-    std::string response = httpGet(url);
-    snapshots.saveSnapshot(key, response);
-    return parseFlights(response);
+    // Parse everything, then filter locally — no extra API calls
+    std::vector<Flight> allFlights = parseFlights(jsonData);
+    return filterFlights(allFlights, arrIata, depDate);
 }
 
 std::optional<Flight> AviationStackClient::getFlightStatus(const std::string& flightNumber) const {
