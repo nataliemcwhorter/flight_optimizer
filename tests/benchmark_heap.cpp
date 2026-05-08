@@ -24,7 +24,7 @@ FlightOffer makeOffer(double price) {
     return offer;
 }
 
-int mainc() {
+int main() {
     const int N = 100000;
 
     std::cout << "=== FlightHeap vs std::priority_queue Benchmark ===\n\n";

@@ -59,7 +59,7 @@ FlightGraph buildGraph(int numAirports, long long baseTime) {
     return graph;
 }
 
-int maind() {
+int main() {
     const int NUM_AIRPORTS = 20;
     const long long BASE_TIME = 1700000000LL;
 
@@ -117,7 +117,7 @@ int maind() {
     budgetQuery.destination        = "A6";
     budgetQuery.seatClass          = SeatClass::ECONOMY;
     budgetQuery.maxStops           = 3;
-    budgetQuery.budgetCap          = 500.0;
+    budgetQuery.budgetCap          = 575;
     budgetQuery.maxDurationMinutes = 0;
     budgetQuery.priority           = Priority::CHEAPEST;
 
@@ -129,6 +129,27 @@ int maind() {
     std::cout << "Results found: " << budgetResults.size() << "\n";
     std::cout << "Time: " << budgetTime << " microseconds\n\n";
 
+
+    std::cout << "Section 3.1: insanely long route A0 -> A10 (up to 10 stops)\n";
+    //section 3.1
+
+    UserQuery insaneQuery;
+    insaneQuery.origin             = "A0";
+    insaneQuery.destination        = "A10";
+    insaneQuery.seatClass          = SeatClass::ECONOMY;
+    insaneQuery.maxStops           = 10;
+    insaneQuery.budgetCap          = 0.0;
+    insaneQuery.maxDurationMinutes = 0;
+    insaneQuery.priority           = Priority::CHEAPEST;
+
+    start = std::chrono::high_resolution_clock::now();
+    auto insaneResults = finder.findPaths(insaneQuery);
+    end = std::chrono::high_resolution_clock::now();
+    auto insaneTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
+    std::cout << "Results found: " << insaneResults.size() << "\n";
+    std::cout << "Time: " << insaneTime << " microseconds\n\n";
+
     // ============ Section 4: Summary ============
     std::cout << "=== Summary ===\n";
     std::cout << "Direct route (0 stops):            " << directTime << " us, "
@@ -137,6 +158,8 @@ int maind() {
               << multiResults.size() << " result(s)\n";
     std::cout << "Long route w/ budget (3 stops):    " << budgetTime << " us, "
               << budgetResults.size() << " result(s)\n";
+    std::cout << "Insanely long route (10 stops):   " << insaneTime << " us, "
+    << insaneResults.size() << " result(s)\n";
 
     return 0;
 }

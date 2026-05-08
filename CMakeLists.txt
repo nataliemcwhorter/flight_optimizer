@@ -14,6 +14,24 @@ add_executable(benchmark_graph tests/benchmark_graph.cpp
         src/structures/FlightGraph.cpp
         src/structures/FlightGraph.h)
 
+add_executable(benchmark_heap tests/benchmark_heap.cpp
+        src/structures/FlightHeap.h
+        src/models/FlightOffer.h
+        src/structures/FlightHeap.cpp)
+
+
+add_executable(benchmark_pathfinder tests/benchmark_pathfinder.cpp
+        src/structures/FlightGraph.h
+        src/structures/FlightGraph.cpp
+        src/engine/PathFinder.cpp
+        src/engine/PathFinder.h
+        src/models/Flight.h
+        src/models/Airport.h
+        src/models/UserQuery.h
+        src/structures/FlightHeap.cpp
+        src/structures/FlightHeap.h
+        )
+
 
 add_executable(flight_optimizer src/main.cpp
         src/models/Airport.h
