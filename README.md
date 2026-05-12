@@ -3,7 +3,7 @@
 **A high-performance C++17 system for real-time flight search, ranking, and optimization using advanced data structures and live API integration.**
 
 **Author:** Natalie McWhorter
-**Course:** Advanced Data Structures & Algorithms Capstone — Durham Academy, May 2026
+**Course:** Advanced Data Structures — Durham Academy, May 2026
 
 ---
 
